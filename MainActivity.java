@@ -1,109 +1,45 @@
-package kit.mdk0103.nikolaev.lab01calc;
+package kit.mdk0103.nikolaev.lab02converter;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.Spinner;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView resultField; // текстовое поле для вывода результата
-    EditText numberField;   // поле для ввода числа
-    TextView operationField;    // текстовое поле для вывода знака операции
-    Double operand = null;  // операнд операции
-    String lastOperation = "="; // последняя операция
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // получаем все поля по id из activity_main.xml
-        resultField = findViewById(R.id.resultField);
-        numberField = findViewById(R.id.numberField);
-        operationField = findViewById(R.id.operationField);
-    }
-    // сохранение состояния
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        outState.putString("OPERATION", lastOperation);
-        if(operand!=null)
-            outState.putDouble("OPERAND", operand);
-        super.onSaveInstanceState(outState);
-    }
-    // получение ранее сохраненного состояния
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        lastOperation = savedInstanceState.getString("OPERATION");
-        operand= savedInstanceState.getDouble("OPERAND");
-        resultField.setText(operand.toString());
-        operationField.setText(lastOperation);
-    }
-    // обработка нажатия на числовую кнопку
-    public void onNumberClick(View view){
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.units, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-        Button button = (Button)view;
-        numberField.append(button.getText());
+        Spinner fromSpinner = findViewById(R.id.spinner_from);
+        Spinner toSpinner = findViewById(R.id.spinner_to);
 
-        if(lastOperation.equals("=") && operand!=null){
-            operand = null;
-        }
+        fromSpinner.setAdapter(adapter);
+        toSpinner.setAdapter(adapter);
     }
-    // обработка нажатия на кнопку операции
-    public void onOperationClick(View view){
+    public void convert(View view) {
+        Spinner fromSpinner, toSpinner;
+        EditText fromEditText, toEditText;
+        fromSpinner = (Spinner) findViewById(R.id.spinner_from);
+        toSpinner = (Spinner) findViewById(R.id.spinner_to);
+        fromEditText = (EditText) findViewById(R.id.editText_from);
+        toEditText = (EditText) findViewById(R.id.editText_to);
 
-        Button button = (Button)view;
-        String op = button.getText().toString();
-        String number = numberField.getText().toString();
-        // если введенно что-нибудь
-        if(number.length()>0){
-            number = number.replace(',', '.');
-            try{
-                performOperation(Double.valueOf(number), op);
-            }catch (NumberFormatException ex){
-                numberField.setText("");
-            }
-        }
-        lastOperation = op;
-        operationField.setText(lastOperation);
-    }
-
-    private void performOperation(Double number, String operation){
-
-        // если операнд ранее не был установлен (при вводе самой первой операции)
-        if(operand ==null){
-            operand = number;
-        }
-        else{
-            if(lastOperation.equals("=")){
-                lastOperation = operation;
-            }
-            switch(lastOperation){
-                case "=":
-                    operand =number;
-                    break;
-                case "/":
-                    if(number==0){
-                        operand =0.0;
-                    }
-                    else{
-                        operand /=number;
-                    }
-                    break;
-                case "*":
-                    operand *=number;
-                    break;
-                case "+":
-                    operand +=number;
-                    break;
-                case "-":
-                    operand -=number;
-                    break;
-            }
-        }
-        resultField.setText(operand.toString().replace('.', ','));
-        numberField.setText("");
-    }
+        // Получение строки со Spinners и числа с EditText
+        String fromString = (String) fromSpinner.getSelectedItem();
+        String toString = (String) toSpinner.getSelectedItem();
+        double input = Double.valueOf(fromEditText.getText().toString());
+        Converter.Unit fromUnit = Converter.Unit.fromString(fromString);
+        Converter.Unit toUnit = Converter.Unit.fromString(toString);
+        // Создание конвертера и конвертация
+        Converter converter = new Converter(fromUnit, toUnit);
+        double result = converter.convert(input);
+        toEditText.setText(String.valueOf(result));
+ }
 }
